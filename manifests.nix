@@ -1,9 +1,12 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 let
   # Base64 encoded CA certificate for the admission webhook
   # This is the tlcrt file that's baked into the container image
   caCert = builtins.readFile ./certs/tlcrt;
-  caBundle = builtins.replaceStrings ["\n"] [""] caCert;
+  # Kubernetes requires the PEM certificate to be base64-encoded (without newlines)
+  caBundle = builtins.readFile (pkgs.runCommand "ca-bundle" {} ''
+    base64 -w 0 ${./certs/tlcrt} > $out
+  '');
 in
 {
   nixidy.target.rootPath = "manifests";
