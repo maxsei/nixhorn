@@ -22,25 +22,22 @@
       microvm,
       nixidy,
     }:
-    (flake-utils.lib.eachDefaultSystem (
-      system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [
-            (_final: _prev: {
-              nixidy = nixidy.packages.${system};
-            })
-          ];
+    (flake-utils.lib.eachDefaultSystem (_system: {
+      apps =
+        let
+          runner = self.nixosConfigurations.microvm.config.microvm.declaredRunner;
+          mkApp = program: {
+            type = "app";
+            inherit program;
+          };
+          start = mkApp "${runner}/bin/microvm-run";
+        in
+        {
+          inherit start;
+          default = start;
+          stop = mkApp "${runner}/bin/microvm-shutdown";
         };
-      in
-      {
-        apps.default = {
-          type = "app";
-          program = "${self.nixosConfigurations.microvm.config.microvm.declaredRunner}/bin/microvm-run";
-        };
-      }
-    ))
+    }))
     // (flake-utils.lib.eachDefaultSystemPassThrough (
       system:
       let

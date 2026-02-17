@@ -69,4 +69,50 @@
   };
 
   services.k3s.enable = true;
+
+  systemd.services.build-and-push-patch-longhorn =
+    let
+      version = "0.1.0";
+
+      patch-longhorn-manager-adm-ctl-binary = pkgs.buildGoModule {
+        pname = "patch-longhorn-manager-adm-ctl";
+        version = version;
+        src = ./src;
+        vendorHash = "sha256-qVSUymTDYc2caXEUW6jmJ8July11xLuvmYGndjBpk58=";
+        ldflags = [
+          "-s"
+          "-w"
+        ];
+        env.CGO_ENABLED = "0";
+      };
+
+      patch-longhorn-manager-adm-ctl-image = pkgs.dockerTools.buildImage {
+        name = "localhost/patch-longhorn-manager-adm-ctl";
+        tag = version;
+        copyToRoot = pkgs.buildEnv {
+          name = "image-root";
+          paths = [ patch-longhorn-manager-adm-ctl-binary ];
+          pathsToLink = [ "/bin" ];
+        };
+        config.Entrypoint = [
+          "${patch-longhorn-manager-adm-ctl-binary}/bin/patch-longhorn-manager-adm-ctl"
+        ];
+      };
+    in
+    {
+      description = "Load patch-longhorn-manager-adm-ctl image to containerd";
+      wantedBy = [ "multi-user.target" ];
+      after = [
+        "network.target"
+        "containerd.service"
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = pkgs.writeShellScript "load-image" ''
+          set -euo pipefail
+          ${pkgs.nerdctl}/bin/nerdctl load -i ${patch-longhorn-manager-adm-ctl-image}
+        '';
+      };
+    };
 }
