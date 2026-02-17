@@ -30,7 +30,7 @@ var log *zap.Logger
 
 func init() {
 	var err error
-	log, err = zap.NewDevelopment()
+	log, err = zap.NewProduction()
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize logger: %v", err))
 	}
@@ -187,11 +187,6 @@ func handleAdmission(c echo.Context, admit AdmitFunc) error {
 		zap.String("operation", string(admissionReview.Request.Operation)),
 	)
 
-	{
-		bb, _ := json.Marshal(admissionReview.Request)
-		log.Debug("", zap.String("request", string(bb)))
-	}
-
 	response, err := admit(admissionReview.Request)
 	if err != nil {
 		log.Error("admission failed", zap.Error(err))
@@ -202,11 +197,6 @@ func handleAdmission(c echo.Context, admit AdmitFunc) error {
 		}
 	} else {
 		response.UID = admissionReview.Request.UID
-	}
-
-	{
-		bb, _ := json.Marshal(response)
-		log.Debug("", zap.String("response", string(bb)))
 	}
 
 	admissionResponse := admissionv1.AdmissionReview{
