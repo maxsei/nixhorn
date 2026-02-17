@@ -1,4 +1,9 @@
-{ pkgs, modulesPath, ... }:
+{
+  pkgs,
+  config,
+  modulesPath,
+  ...
+}:
 {
   imports = [ (modulesPath + "/profiles/minimal.nix") ];
 
@@ -35,6 +40,8 @@
     ];
   };
 
+  system.switch.enable = true;
+
   networking.hostName = "microvm";
   system.stateVersion = "26.05";
   time.timeZone = "America/Chicago";
@@ -57,6 +64,7 @@
     ripgrep
     kubectl
     nfs-utils
+    openiscsi
     nerdctl
     k9s
     go
@@ -87,12 +95,22 @@
       };
 
       patch-longhorn-manager-adm-ctl-image = pkgs.dockerTools.buildImage {
-        name = "localhost/patch-longhorn-manager-adm-ctl";
+        name = "${config.networking.hostName}/patch-longhorn-manager-adm-ctl";
         tag = version;
         copyToRoot = pkgs.buildEnv {
           name = "image-root";
-          paths = [ patch-longhorn-manager-adm-ctl-binary ];
-          pathsToLink = [ "/bin" ];
+          paths = [
+            patch-longhorn-manager-adm-ctl-binary
+            (pkgs.runCommand "tls-certs" { } ''
+              mkdir -p $out/etc/tls
+              cp ${./certs/tlcrt} $out/etc/tls/tlcrt
+              cp ${./certs/tlkey} $out/etc/tls/tlkey
+            '')
+          ];
+          pathsToLink = [
+            "/bin"
+            "/etc"
+          ];
         };
         config.Entrypoint = [
           "${patch-longhorn-manager-adm-ctl-binary}/bin/patch-longhorn-manager-adm-ctl"
@@ -104,14 +122,14 @@
       wantedBy = [ "multi-user.target" ];
       after = [
         "network.target"
-        "containerd.service"
+        "k3s.service"
       ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "load-image" ''
           set -euo pipefail
-          ${pkgs.nerdctl}/bin/nerdctl load -i ${patch-longhorn-manager-adm-ctl-image}
+          ${pkgs.k3s}/bin/k3s ctr images import ${patch-longhorn-manager-adm-ctl-image}
         '';
       };
     };

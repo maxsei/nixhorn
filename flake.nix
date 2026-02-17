@@ -37,6 +37,7 @@
           default = start;
           stop = mkApp "${runner}/bin/microvm-shutdown";
         };
+      packages.default = self.nixosConfigurations.microvm.config.system.build.toplevel;
     }))
     // (flake-utils.lib.eachDefaultSystemPassThrough (
       system:
