@@ -30,7 +30,7 @@ var log *zap.Logger
 
 func init() {
 	var err error
-	log, err = zap.NewProduction()
+	log, err = zap.NewDevelopment()
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize logger: %v", err))
 	}
@@ -49,7 +49,7 @@ func init() {
 	flag.StringVar(&TLSCertFile, "tls-cert-file", TLSCertFile, "Path to TLS certificate")
 	flag.StringVar(&TLSKeyFile, "tls-key-file", TLSKeyFile, "Path to TLS key")
 	flag.StringVar(&LonghornNamespace, "longhorn-namespace", LonghornNamespace, "Name of longhorn namespace")
-	flag.StringVar(&PathPatch, "patch-patch", PathPatch, "Path variable to patch with")
+	flag.StringVar(&PathPatch, "path-patch", PathPatch, "Path variable to patch with")
 }
 
 func main() {
@@ -187,6 +187,11 @@ func handleAdmission(c echo.Context, admit AdmitFunc) error {
 		zap.String("operation", string(admissionReview.Request.Operation)),
 	)
 
+	{
+		bb, _ := json.Marshal(admissionReview.Request)
+		log.Debug("", zap.String("request", string(bb)))
+	}
+
 	response, err := admit(admissionReview.Request)
 	if err != nil {
 		log.Error("admission failed", zap.Error(err))
@@ -199,9 +204,14 @@ func handleAdmission(c echo.Context, admit AdmitFunc) error {
 		response.UID = admissionReview.Request.UID
 	}
 
+	{
+		bb, _ := json.Marshal(response)
+		log.Debug("", zap.String("response", string(bb)))
+	}
+
 	admissionResponse := admissionv1.AdmissionReview{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "admission.k8io/v1",
+			APIVersion: "admission.k8s.io/v1",
 			Kind:       "AdmissionReview",
 		},
 		Response: response,

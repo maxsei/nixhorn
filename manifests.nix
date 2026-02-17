@@ -65,7 +65,7 @@ in
           metadata.labels = labels;
           spec = {
             containers.webhook = {
-              image = "docker.io/microvm/patch-longhorn-manager-adm-ctl:0.1.1";
+              image = "docker.io/microvm/patch-longhorn-manager-adm-ctl:0.1.4";
               imagePullPolicy = "Never"; # Image is loaded directly into containerd
               ports.https = {
                 containerPort = 8443;
