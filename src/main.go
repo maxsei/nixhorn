@@ -70,13 +70,16 @@ func app() *echo.Echo {
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.Recover())
-	e.Use(middleware.RequestLogger())
 
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "healthy"})
 	})
-	e.POST("/validate", admitHandler(passthru))
-	e.POST("/mutate", admitHandler(mutate))
+
+	g := e.Group("")
+	g.Use(middleware.RequestLogger())
+	g.POST("/validate", admitHandler(passthru))
+	g.POST("/mutate", admitHandler(mutate))
+
 	return e
 }
 

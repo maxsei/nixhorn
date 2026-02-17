@@ -80,7 +80,7 @@
 
   systemd.services.build-and-push-patch-longhorn =
     let
-      version = "0.1.0";
+      version = "0.1.1";
 
       patch-longhorn-manager-adm-ctl-binary = pkgs.buildGoModule {
         pname = "patch-longhorn-manager-adm-ctl";
