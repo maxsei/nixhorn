@@ -1,0 +1,3 @@
+# Patch Longhorn Manager Admission Controller
+
+This is a response to https://github.com/longhorn/longhorn/issues/2166. The `longhorn-manager` and `longhorn-instance-manager` use `nsenter` inside a privileged container to run `iscsiadm` and a few other binaries on the host system. This is not an issue except for fact that the `PATH` variable that it inherits from the container environment is FHS like. This causes the binaries longhorn expects to be on the host system to not be found. Since longhorn manages the creation of these containers, the PATH cannot be patched in configuration and requires a runtime solution in k8s to achieve this i.e. admission controllers.
