@@ -1,0 +1,104 @@
+replicaCount: 1
+
+image:
+  repository: docker.io/microvm/patch-longhorn-manager-adm-ctl
+  pullPolicy: IfNotPresent
+  tag: "0.1.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+webhook:
+  port: 8443
+
+  # PATH that's patched into each longhorn container's PATH.
+  # see: https://github.com/NixOS/nixpkgs/blob/c7e10647eadb53b7cf3552a53e8bb33c8248c8c3/pkgs/applications/networking/cluster/k3s/docs/examples/STORAGE.md
+  pathPatch: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/run/wrappers/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin"
+
+  longhornNamespace: "longhorn-system"
+
+  # Webhook failure policy: Ignore or Fail
+  # Ignore = pod creation continues even if webhook fails
+  # Fail = pod creation is blocked if webhook fails
+  failurePolicy: Ignore
+
+  timeoutSeconds: 10
+
+  # TLS certificate configuration
+  tls:
+    # If true, create a Secret with the provided certificate and key
+    create: true
+
+    # Name of the secret containing TLS certificates
+    # If tls.create is false, this secret must exist
+    secretName: ""
+
+    # Base64 encoded CA certificate (PEM format)
+    # This is used in the MutatingWebhookConfiguration
+    caCert: ""
+
+    # PEM encoded certificate (not base64 encoded)
+    # Only used if tls.create is true
+    cert: ""
+
+    # PEM encoded private key (not base64 encoded)
+    # Only used if tls.create is true
+    key: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 443
+  targetPort: 8443
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8443
+    scheme: HTTPS
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8443
+    scheme: HTTPS
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

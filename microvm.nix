@@ -103,8 +103,8 @@
             patch-longhorn-manager-adm-ctl-binary
             (pkgs.runCommand "tls-certs" { } ''
               mkdir -p $out/etc/tls
-              cp ${./certs/tlcrt} $out/etc/tls/tlcrt
-              cp ${./certs/tlkey} $out/etc/tls/tlkey
+              cp ${./chart/files/default.crt} $out/etc/tls/tlcrt
+              cp ${./chart/files/default.key} $out/etc/tls/tlkey
             '')
           ];
           pathsToLink = [
