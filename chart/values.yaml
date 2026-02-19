@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: docker.io/microvm/patch-longhorn-manager-adm-ctl
+  repository: docker.io/microvm/nixhorn-webhook
   pullPolicy: IfNotPresent
   tag: "0.1.0"
 

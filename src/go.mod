@@ -1,4 +1,4 @@
-module github.com/maxsei/patch-longhorn-manager-adm-ctl
+module github.com/maxsei/nixhorn-webhook
 
 go 1.25.2
 

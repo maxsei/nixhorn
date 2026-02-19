@@ -43,20 +43,20 @@
 
       transformer =
         let
-          wait-for-patch-longhorn-manager-adm-ctl = {
-            name = "wait-for-patch-longhorn-manager-adm-ctl";
+          wait-for-nixhorn-webhook = {
+            name = "wait-for-nixhorn-webhook";
             image = "bitnami/kubectl:latest";
             command = [
               "sh"
               "-c"
               ''
                 echo "Waiting for MutatingWebhookConfiguration..."
-                until kubectl get mutatingwebhookconfiguration patch-longhorn-manager-adm-ctl 2>/dev/null; do
+                until kubectl get mutatingwebhookconfiguration nixhorn-webhook 2>/dev/null; do
                   sleep 2
                 done
 
                 echo "Waiting for webhook deployment to be available..."
-                kubectl wait deployment patch-longhorn-manager-adm-ctl \
+                kubectl wait deployment nixhorn-webhook \
                   -n longhorn-system \
                   --for=condition=available \
                   --timeout=300s
@@ -98,7 +98,7 @@
             then
               lib.recursiveUpdate mf {
                 spec.template.spec.initContainers = [
-                  wait-for-patch-longhorn-manager-adm-ctl
+                  wait-for-nixhorn-webhook
                 ];
                 spec.template.spec.containers = map patchContainerWithNixPath mf.spec.template.spec.containers;
               }
@@ -112,7 +112,7 @@
             then
               lib.recursiveUpdate mf {
                 spec.template.spec.initContainers = [
-                  wait-for-patch-longhorn-manager-adm-ctl
+                  wait-for-nixhorn-webhook
                 ];
               }
             else
@@ -128,9 +128,9 @@
     };
   };
 
-  applications.patch-longhorn-manager-adm-ctl = {
+  applications.nixhorn-webhook = {
     namespace = "longhorn-system";
-    helm.releases.patch-longhorn-manager-adm-ctl = {
+    helm.releases.nixhorn-webhook = {
       chart = ./chart;
     };
   };

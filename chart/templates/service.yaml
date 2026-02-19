@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "patch-longhorn-manager-adm-ctl.fullname" . }}
+  name: {{ include "nixhorn-webhook.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "patch-longhorn-manager-adm-ctl.labels" . | nindent 4 }}
+    {{- include "nixhorn-webhook.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -13,4 +13,4 @@ spec:
     protocol: TCP
     name: https
   selector:
-    {{- include "patch-longhorn-manager-adm-ctl.selectorLabels" . | nindent 4 }}
+    {{- include "nixhorn-webhook.selectorLabels" . | nindent 4 }}

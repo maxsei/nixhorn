@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "patch-longhorn-manager-adm-ctl.fullname" . }}
+  name: {{ include "nixhorn-webhook.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "patch-longhorn-manager-adm-ctl.labels" . | nindent 4 }}
+    {{- include "nixhorn-webhook.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "patch-longhorn-manager-adm-ctl.selectorLabels" . | nindent 6 }}
+      {{- include "nixhorn-webhook.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "patch-longhorn-manager-adm-ctl.selectorLabels" . | nindent 8 }}
+        {{- include "nixhorn-webhook.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -55,7 +55,7 @@ spec:
       volumes:
       - name: tls
         secret:
-          secretName: {{ include "patch-longhorn-manager-adm-ctl.tlsSecretName" . }}
+          secretName: {{ include "nixhorn-webhook.tlsSecretName" . }}
           items:
           - key: tls.crt
             path: tls.crt

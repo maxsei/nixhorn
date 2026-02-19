@@ -82,8 +82,8 @@
     let
       version = "0.1.0";
 
-      patch-longhorn-manager-adm-ctl-binary = pkgs.buildGoModule {
-        pname = "patch-longhorn-manager-adm-ctl";
+      nixhorn-webhook-binary = pkgs.buildGoModule {
+        pname = "nixhorn-webhook";
         version = version;
         src = ./src;
         vendorHash = "sha256-qVSUymTDYc2caXEUW6jmJ8July11xLuvmYGndjBpk58=";
@@ -94,13 +94,13 @@
         env.CGO_ENABLED = "0";
       };
 
-      patch-longhorn-manager-adm-ctl-image = pkgs.dockerTools.buildImage {
-        name = "${config.networking.hostName}/patch-longhorn-manager-adm-ctl";
+      nixhorn-webhook-image = pkgs.dockerTools.buildImage {
+        name = "${config.networking.hostName}/nixhorn-webhook";
         tag = version;
         copyToRoot = pkgs.buildEnv {
           name = "image-root";
           paths = [
-            patch-longhorn-manager-adm-ctl-binary
+            nixhorn-webhook-binary
             (pkgs.runCommand "tls-certs" { } ''
               mkdir -p $out/etc/tls
               cp ${./chart/files/default.crt} $out/etc/tls/tlcrt
@@ -113,12 +113,12 @@
           ];
         };
         config.Entrypoint = [
-          "${patch-longhorn-manager-adm-ctl-binary}/bin/patch-longhorn-manager-adm-ctl"
+          "${nixhorn-webhook-binary}/bin/nixhorn-webhook"
         ];
       };
     in
     {
-      description = "Load patch-longhorn-manager-adm-ctl image to containerd";
+      description = "Load nixhorn-webhook image to containerd";
       wantedBy = [ "multi-user.target" ];
       after = [
         "network.target"
@@ -129,7 +129,7 @@
         RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "load-image" ''
           set -euo pipefail
-          ${pkgs.k3s}/bin/k3s ctr images import ${patch-longhorn-manager-adm-ctl-image}
+          ${pkgs.k3s}/bin/k3s ctr images import ${nixhorn-webhook-image}
         '';
       };
     };

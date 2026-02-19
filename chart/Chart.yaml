@@ -1,5 +1,5 @@
 apiVersion: v2
-name: patch-longhorn-manager-adm-ctl
+name: nixhorn-webhook
 description: A Kubernetes admission webhook that dynamically patches Longhorn pods with NixOS-compatible PATH environment variables
 type: application
 version: 0.1.0
@@ -11,6 +11,6 @@ keywords:
   - mutating-webhook
 maintainers:
   - name: maxsei
-home: https://github.com/maxsei/patch-longhorn-manager-adm-ctl
+home: https://github.com/maxsei/nixhorn-webhook
 sources:
-  - https://github.com/maxsei/patch-longhorn-manager-adm-ctl
+  - https://github.com/maxsei/nixhorn-webhook
