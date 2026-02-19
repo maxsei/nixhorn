@@ -5,7 +5,6 @@ image:
   pullPolicy: IfNotPresent
   tag: "0.1.0"
 
-imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
@@ -46,18 +45,7 @@ webhook:
     # Only used if tls.create is true
     key: ""
 
-podAnnotations: {}
-
-podSecurityContext: {}
-  # fsGroup: 2000
-
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 service:
   type: ClusterIP
