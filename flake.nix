@@ -40,12 +40,24 @@
                 -f ./chart/values.yaml \
                 -o ./chart/values.schema.json
             '';
+            helmValidate = pkgs.writeShellScript "helm-validate" ''
+              set -e
+              echo "Running helm lint..."
+              ${pkgs.kubernetes-helm}/bin/helm lint ./chart
+              echo ""
+              echo "Running helm template..."
+              ${pkgs.kubernetes-helm}/bin/helm template test-release ./chart > /dev/null
+              echo "Templates rendered successfully!"
+              echo ""
+              echo "Validation successful!"
+            '';
           in
           rec {
             start = mkApp "${runner}/bin/microvm-run";
             default = start;
             stop = mkApp "${runner}/bin/microvm-shutdown";
             genHelmSchema = mkApp "${helmGenSchema}";
+            validateHelm = mkApp "${helmValidate}";
           };
         packages.default = self.nixosConfigurations.microvm.config.system.build.toplevel;
       }
