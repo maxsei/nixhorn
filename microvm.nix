@@ -99,22 +99,10 @@
         tag = version;
         copyToRoot = pkgs.buildEnv {
           name = "image-root";
-          paths = [
-            nixhorn-webhook-binary
-            (pkgs.runCommand "tls-certs" { } ''
-              mkdir -p $out/etc/tls
-              cp ${./chart/files/default.crt} $out/etc/tls/tlcrt
-              cp ${./chart/files/default.key} $out/etc/tls/tlkey
-            '')
-          ];
-          pathsToLink = [
-            "/bin"
-            "/etc"
-          ];
+          paths = [ nixhorn-webhook-binary ];
+          pathsToLink = [ "/bin" ];
         };
-        config.Entrypoint = [
-          "${nixhorn-webhook-binary}/bin/nixhorn-webhook"
-        ];
+        config.Entrypoint = [ "${nixhorn-webhook-binary}/bin/nixhorn-webhook" ];
       };
     in
     {
@@ -127,7 +115,7 @@
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "load-image" ''
+        ExecStart = pkgs.writeShellScript "containerd-load-nixhorn-image" ''
           set -euo pipefail
           ${pkgs.k3s}/bin/k3s ctr images import ${nixhorn-webhook-image}
         '';
