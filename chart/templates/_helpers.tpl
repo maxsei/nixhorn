@@ -1,6 +1,3 @@
-{{/*
-Expand the name of the chart.
-*/}}
 {{- define "patch-longhorn-manager-adm-ctl.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
@@ -49,17 +46,6 @@ Selector labels
 {{- define "patch-longhorn-manager-adm-ctl.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "patch-longhorn-manager-adm-ctl.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end }}
-
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "patch-longhorn-manager-adm-ctl.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "patch-longhorn-manager-adm-ctl.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
 {{- end }}
 
 {{/*
