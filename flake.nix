@@ -22,23 +22,34 @@
       microvm,
       nixidy,
     }:
-    (flake-utils.lib.eachDefaultSystem (_system: {
-      apps =
-        let
-          runner = self.nixosConfigurations.microvm.config.microvm.declaredRunner;
-          mkApp = program: {
-            type = "app";
-            inherit program;
+    (flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+      in
+      {
+        apps =
+          let
+            runner = self.nixosConfigurations.microvm.config.microvm.declaredRunner;
+            mkApp = program: {
+              type = "app";
+              inherit program;
+            };
+            helmGenSchema = pkgs.writeShellScript "helm-gen-schema" ''
+              ${pkgs.kubernetes-helmPlugins.helm-schema}/helm-schema/bin/schema \
+                -f ./chart/values.yaml \
+                -o ./chart/values.schema.json
+            '';
+          in
+          rec {
+            start = mkApp "${runner}/bin/microvm-run";
+            default = start;
+            stop = mkApp "${runner}/bin/microvm-shutdown";
+            genHelmSchema = mkApp "${helmGenSchema}";
           };
-          start = mkApp "${runner}/bin/microvm-run";
-        in
-        {
-          inherit start;
-          default = start;
-          stop = mkApp "${runner}/bin/microvm-shutdown";
-        };
-      packages.default = self.nixosConfigurations.microvm.config.system.build.toplevel;
-    }))
+        packages.default = self.nixosConfigurations.microvm.config.system.build.toplevel;
+      }
+    ))
     // (flake-utils.lib.eachDefaultSystemPassThrough (
       system:
       let

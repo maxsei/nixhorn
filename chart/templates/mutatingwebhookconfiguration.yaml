@@ -11,9 +11,9 @@ webhooks:
       namespace: {{ .Release.Namespace }}
       name: {{ include "nixhorn-webhook.fullname" . }}
       path: /mutate
-    {{- if .Values.webhook.tls.caCert }}
-    {{- /* Use CA certificate provided in values */}}
-    caBundle: {{ .Values.webhook.tls.caCert }}
+    {{- if and (eq .Values.webhook.tls.type "literal") .Values.webhook.tls.cert }}
+    {{- /* Use certificate provided in values as CA bundle (for self-signed certs) */}}
+    caBundle: {{ .Values.webhook.tls.cert | b64enc }}
     {{- else if .Files.Get "files/default.crt" }}
     {{- /* Use default certificate bundled with the chart */}}
     caBundle: {{ .Files.Get "files/default.crt" | b64enc }}

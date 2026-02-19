@@ -51,8 +51,8 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 Create the name of the TLS secret
 */}}
 {{- define "nixhorn-webhook.tlsSecretName" -}}
-{{- if .Values.webhook.tls.secretName }}
-{{- .Values.webhook.tls.secretName }}
+{{- if eq .Values.webhook.tls.type "secret" }}
+{{- .Values.webhook.tls.name }}
 {{- else }}
 {{- include "nixhorn-webhook.fullname" . }}-tls
 {{- end }}

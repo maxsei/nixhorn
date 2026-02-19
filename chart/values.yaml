@@ -24,25 +24,26 @@ webhook:
 
   timeoutSeconds: 10
 
-  # TLS certificate configuration
+  # @schema
+  # oneOf:
+  #   - required: [cert, key]
+  #     properties:
+  #       type:
+  #         const: literal
+  #       cert:
+  #         type: string
+  #       key:
+  #         type: string
+  #   - required: [name]
+  #     properties:
+  #       type:
+  #         const: secret
+  #       name:
+  #         type: string
+  # @schema
   tls:
-    # If true, create a Secret with the provided certificate and key
-    create: true
-
-    # Name of the secret containing TLS certificates
-    # If tls.create is false, this secret must exist
-    secretName: ""
-
-    # Base64 encoded CA certificate (PEM format)
-    # This is used in the MutatingWebhookConfiguration
-    caCert: ""
-
-    # PEM encoded certificate (not base64 encoded)
-    # Only used if tls.create is true
+    type: literal
     cert: ""
-
-    # PEM encoded private key (not base64 encoded)
-    # Only used if tls.create is true
     key: ""
 
 securityContext: {}
