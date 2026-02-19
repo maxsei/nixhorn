@@ -99,12 +99,12 @@ webhook:
       gdI2MFrwAjR+IOqtMjchYe1jvg==
       -----END PRIVATE KEY-----
 
+# Admission controller security context.
 securityContext: {}
 
 service:
   type: ClusterIP
   port: 443
-  targetPort: 8443
 
 resources:
   limits:
@@ -115,17 +115,9 @@ resources:
     memory: 64Mi
 
 livenessProbe:
-  httpGet:
-    path: /health
-    port: 8443
-    scheme: HTTPS
   initialDelaySeconds: 10
   periodSeconds: 10
 
 readinessProbe:
-  httpGet:
-    path: /health
-    port: 8443
-    scheme: HTTPS
   initialDelaySeconds: 5
   periodSeconds: 5
