@@ -17,9 +17,9 @@ webhook:
 
   longhornNamespace: "longhorn-system"
 
-  # Webhook failure policy: Ignore or Fail
-  # Ignore = pod creation continues even if webhook fails
-  # Fail = pod creation is blocked if webhook fails
+  # @schema
+  # required: false
+  # enum: [Ignore,Fail]
   failurePolicy: Ignore
 
   timeoutSeconds: 10
