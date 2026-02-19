@@ -2,9 +2,6 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-        "fullnameOverride": {
-            "type": "string"
-        },
         "image": {
             "type": "object",
             "properties": {
@@ -22,20 +19,6 @@
         "livenessProbe": {
             "type": "object",
             "properties": {
-                "httpGet": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string"
-                        },
-                        "port": {
-                            "type": "integer"
-                        },
-                        "scheme": {
-                            "type": "string"
-                        }
-                    }
-                },
                 "initialDelaySeconds": {
                     "type": "integer"
                 },
@@ -44,26 +27,9 @@
                 }
             }
         },
-        "nameOverride": {
-            "type": "string"
-        },
         "readinessProbe": {
             "type": "object",
             "properties": {
-                "httpGet": {
-                    "type": "object",
-                    "properties": {
-                        "path": {
-                            "type": "string"
-                        },
-                        "port": {
-                            "type": "integer"
-                        },
-                        "scheme": {
-                            "type": "string"
-                        }
-                    }
-                },
                 "initialDelaySeconds": {
                     "type": "integer"
                 },
@@ -109,9 +75,6 @@
             "type": "object",
             "properties": {
                 "port": {
-                    "type": "integer"
-                },
-                "targetPort": {
                     "type": "integer"
                 },
                 "type": {

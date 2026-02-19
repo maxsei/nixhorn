@@ -1,17 +1,12 @@
 {{- define "nixhorn-webhook.name" -}}
-{{- default .Chart.Name .Values.nameOverride }}
+{{- .Chart.Name }}
 {{- end }}
 
 {{- define "nixhorn-webhook.fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride }}
-{{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
-{{- if contains $name .Release.Name }}
+{{- if contains .Chart.Name .Release.Name }}
 {{- .Release.Name }}
 {{- else }}
-{{- printf "%s-%s" .Release.Name $name }}
-{{- end }}
+{{- printf "%s-%s" .Release.Name .Chart.Name }}
 {{- end }}
 {{- end }}
 
