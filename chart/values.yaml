@@ -87,9 +87,3 @@ readinessProbe:
     scheme: HTTPS
   initialDelaySeconds: 5
   periodSeconds: 5
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
