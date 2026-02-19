@@ -25,7 +25,10 @@
     (flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ (import ./overlays/default.nix) ];
+        };
       in
       {
         apps =
@@ -53,7 +56,11 @@
             helmGenSchema = mkApp "${helmGenSchema}";
             validateHelm = mkApp "${helmValidate}";
           };
-        packages.default = self.nixosConfigurations.microvm.config.system.build.toplevel;
+        packages = {
+          default = self.nixosConfigurations.microvm.config.system.build.toplevel;
+          nixhorn = pkgs.nixhorn;
+          nixhorn-image = pkgs.nixhorn-image;
+        };
       }
     ))
     // (flake-utils.lib.eachDefaultSystemPassThrough (
@@ -62,6 +69,7 @@
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
+            (import ./overlays/default.nix)
             (_final: _prev: {
               nixidy = nixidy.packages.${system};
             })
@@ -69,7 +77,7 @@
         };
         nixidyEnvs = nixidy.lib.mkEnvs {
           inherit pkgs;
-          envs.default.modules = [ ./manifests.nix ];
+          envs.default.modules = [ ./manifests ];
         };
       in
       {
@@ -79,8 +87,12 @@
           inherit system;
           modules = [
             microvm.nixosModules.microvm
-            ./microvm.nix
+            ./microvm
             {
+              nixpkgs.overlays = [
+                (import ./overlays/default.nix)
+              ];
+
               services.k3s.manifests.nixidy-manifests = {
                 source = nixidyEnvs.default.declarativePackage;
                 target = "nixidy-manifests";
