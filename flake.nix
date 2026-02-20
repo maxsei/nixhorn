@@ -8,10 +8,6 @@
       url = "github:microvm-nix/microvm.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixidy = {
-      url = "github:arnarg/nixidy";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
@@ -20,29 +16,13 @@
       nixpkgs,
       flake-utils,
       microvm,
-      nixidy,
     }:
     let
       mkPkgs =
         system:
         import nixpkgs {
           inherit system;
-          overlays = [
-            (import ./overlays/default.nix)
-            (final: prev: {
-              helm-schema = final.callPackage ./packages/helm-schema.nix { };
-              nixidy = nixidy.packages.${system};
-              nixidyEnvs = nixidy.lib.mkEnvs {
-                pkgs = final;
-                envs.default.modules = [ ./manifests ];
-              };
-              lib = prev.lib.extend (
-                _lfinal: _lprev: {
-                  nixidy = nixidy.lib;
-                }
-              );
-            })
-          ];
+          overlays = [ (import ./overlays/default.nix) ];
         };
     in
     (flake-utils.lib.eachDefaultSystem (
@@ -93,7 +73,6 @@
         pkgs = mkPkgs system;
       in
       {
-        nixidyEnvs = pkgs.nixidyEnvs;
         nixosConfigurations.microvm = pkgs.nixos {
           imports = [
             microvm.nixosModules.microvm
