@@ -11,7 +11,10 @@ webhooks:
       namespace: {{ .Release.Namespace }}
       name: {{ include "nixhorn-webhook.fullname" . }}
       path: /mutate
-    {{- if and (eq .Values.webhook.tls.type "literal") .Values.webhook.tls.cert }}
+    {{- if eq .Values.webhook.tls.type "insecure" }}
+    {{- $certData := include "nixhorn-webhook.genCerts" . | fromYaml }}
+    caBundle: {{ $certData.caBundle }}
+    {{- else if and (eq .Values.webhook.tls.type "literal") .Values.webhook.tls.cert }}
     caBundle: {{ .Values.webhook.tls.cert | b64enc }}
     {{- else }}
     caBundle: ""

@@ -36,3 +36,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- include "nixhorn-webhook.fullname" . }}-tls
 {{- end }}
 {{- end }}
+
+{{- define "nixhorn-webhook.genCerts" -}}
+{{- $serviceName := include "nixhorn-webhook.fullname" . }}
+{{- $namespace := .Release.Namespace }}
+{{- $cn := printf "%s.%s.svc.cluster.local" $serviceName $namespace }}
+{{- $altNames := list $serviceName (printf "%s.%s" $serviceName $namespace) (printf "%s.%s.svc" $serviceName $namespace) $cn }}
+{{- $cert := genSelfSignedCert $cn nil $altNames 3650 }}
+tls.crt: {{ $cert.Cert | b64enc }}
+tls.key: {{ $cert.Key | b64enc }}
+caBundle: {{ $cert.Cert | b64enc }}
+{{- end }}
