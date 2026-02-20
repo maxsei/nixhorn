@@ -1,8 +1,8 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 {
   services.openiscsi = {
     enable = true;
-    name = "microvm-initiatorhost";
+    name = "${config.networking.hostName}-initiatorhost";
   };
 
   environment.systemPackages = with pkgs; [
