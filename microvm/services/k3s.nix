@@ -13,15 +13,18 @@
   ];
   environment.variables.KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
 
-  services.k3s.manifests.nixhorn.source = pkgs.linkFarm "k3s-manifests-nixhorn" {
-    "00-namespaces" = pkgs.writers.writeYAML "longhorn-system-namespace.yaml" {
-      apiVersion = "v1";
-      kind = "Namespace";
-      metadata = rec {
-        name = "longhorn-system";
-        labels.name = name;
+  services.k3s.manifests.nixhorn = {
+    target = "nixhorn"; # must be directory
+    source = pkgs.linkFarm "k3s-manifests-nixhorn" {
+      "00-namespaces.yaml" = pkgs.writers.writeYAML "longhorn-system-namespace.yaml" {
+        apiVersion = "v1";
+        kind = "Namespace";
+        metadata = rec {
+          name = "longhorn-system";
+          labels.name = name;
+        };
       };
+      "01-manifests.yaml" = "${pkgs.nixhorn-manifests}";
     };
-    "01-manifests" = "${pkgs.nixhorn-manifests}";
   };
 }
