@@ -1,0 +1,26 @@
+- op: add
+  path: /spec/template/spec/initContainers
+  value:
+    - name: wait-for-nixhorn-webhook
+      image: bitnami/kubectl:latest
+      command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for MutatingWebhookConfiguration..."
+          until kubectl get mutatingwebhookconfiguration nixhorn-webhook 2>/dev/null; do
+            sleep 2
+          done
+          echo "Waiting for webhook deployment to be available..."
+          kubectl wait deployment nixhorn-webhook \
+            -n longhorn-system \
+            --for=condition=available \
+            --timeout=300s
+          echo "Webhook deployment is available"
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
