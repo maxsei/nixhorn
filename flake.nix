@@ -54,7 +54,6 @@
           nixhorn = pkgs.nixhorn;
           nixhorn-image = pkgs.nixhorn-image;
           nixhorn-chart = pkgs.nixhorn-chart;
-          nixhorn-manifests = pkgs.nixhorn-manifests;
         };
       }
     ))
