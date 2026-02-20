@@ -2,17 +2,16 @@
   helm-schema,
   runCommand,
   writers,
+  nixhorn-image,
 }:
-
 let
-  version = "0.1.0";
   chartYaml = writers.writeYAML "kustomization.yaml" {
     apiVersion = "v2";
     name = "nixhorn-webhook";
     description = "A Kubernetes admission webhook that dynamically patches Longhorn pods with NixOS-compatible PATH environment variables";
     type = "application";
-    inherit version;
-    appVersion = version;
+    version = builtins.readFile ./VERSION;
+    appVersion = nixhorn-image.version;
     keywords = [
       "longhorn"
       "nixos"
@@ -32,7 +31,7 @@ let
   '';
 
 in
-runCommand "nixhorn-webhook-chart" {} ''
+runCommand "nixhorn-webhook-chart" { } ''
   mkdir -p $out
   cp -r ${./templates} "$out/templates"
   cp -r ${./files} "$out/files"
