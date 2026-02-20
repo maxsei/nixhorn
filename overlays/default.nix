@@ -3,4 +3,5 @@ final: prev: {
   nixhorn-image = final.callPackage ../packages/nixhorn/image.nix {
     nixhorn = final.nixhorn;
   };
+  nixhorn-manifests = final.callPackage ../packages/nixhorn/manifests.nix { };
 }

@@ -79,6 +79,7 @@
           microvm = self.nixosConfigurations.microvm.config.system.build.toplevel;
           nixhorn = pkgs.nixhorn;
           nixhorn-image = pkgs.nixhorn-image;
+          nixhorn-manifests = pkgs.nixhorn-manifests;
         };
       }
     ))
