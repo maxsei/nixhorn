@@ -1,8 +1,9 @@
 {
+  lib,
   helm-schema,
   runCommand,
   writers,
-  nixhorn-image,
+  nixhorn-webhook-image,
 }:
 let
   chartYaml = writers.writeYAML "kustomization.yaml" {
@@ -11,7 +12,7 @@ let
     description = "A Kubernetes admission webhook that dynamically patches Longhorn pods with NixOS-compatible PATH environment variables";
     type = "application";
     version = builtins.readFile ./VERSION;
-    appVersion = nixhorn-image.version;
+    appVersion = nixhorn-webhook-image.imageTag;
     keywords = [
       "longhorn"
       "nixos"

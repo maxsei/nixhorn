@@ -59,7 +59,7 @@ let
       ''
         cp ${kustomization} kustomization.yaml
         cp -r ${longhorn-chart} longhorn
-        cp -r ${pkgs.nixhorn-chart} nixhorn-webhook
+        cp -r ${pkgs.nixhorn-webhook-chart} nixhorn-webhook
         cp -r ${./manifests} manifests
         kustomize build --enable-helm . > $out
       '';

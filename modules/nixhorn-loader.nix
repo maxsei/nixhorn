@@ -14,7 +14,7 @@ in
     imagePackage = lib.mkOption {
       type = lib.types.package;
       description = "The container image package to load";
-      default = pkgs.nixhorn-image;
+      default = pkgs.nixhorn-webhook-image;
     };
 
     after = lib.mkOption {
@@ -35,7 +35,7 @@ in
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
-        ExecStart = pkgs.writeShellScript "containerd-load-nixhorn-image" ''
+        ExecStart = pkgs.writeShellScript "containerd-load-nixhorn-webhook-image" ''
           ${pkgs.k3s}/bin/k3s ctr images import ${cfg.imagePackage}
         '';
       };

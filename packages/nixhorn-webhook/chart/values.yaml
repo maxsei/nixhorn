@@ -3,7 +3,12 @@ replicaCount: 1
 image:
   repository: ghcr.io/mschulte/nixhorn-webhook
   pullPolicy: IfNotPresent
-  tag: "0.1.0" # TODO derive default value from from Chart.yaml
+  # @schema
+  # required: false
+  # type: string
+  # description: Container image tag. Defaults to .Chart.AppVersion if not specified
+  # @schema
+  tag: ""
 
 webhook:
   port: 8443

@@ -51,9 +51,9 @@
           };
         packages = {
           microvm = self.nixosConfigurations.microvm.config.system.build.toplevel;
-          nixhorn = pkgs.nixhorn;
-          nixhorn-image = pkgs.nixhorn-image;
-          nixhorn-chart = pkgs.nixhorn-chart;
+          nixhorn-webhook = pkgs.nixhorn-webhook;
+          nixhorn-webhook-image = pkgs.nixhorn-webhook-image;
+          nixhorn-webhook-chart = pkgs.nixhorn-webhook-chart;
         };
       }
     ))
