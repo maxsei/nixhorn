@@ -37,14 +37,14 @@ let
         releaseName = "nixhorn-webhook";
         namespace = "longhorn-system";
       }
-      # {
-      #   name = "longhorn";
-      #   releaseName = "longhorn";
-      #   namespace = "longhorn-system";
-      #   valuesInline = longhorn-values;
-      # }
+      {
+        name = "longhorn";
+        releaseName = "longhorn";
+        namespace = "longhorn-system";
+        valuesInline = longhorn-values;
+      }
     ];
-    # components = [ "./patches" ];
+    components = [ "./patches" ];
   };
 in
 pkgs.runCommand "nixhorn-manifests"

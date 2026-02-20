@@ -1,120 +1,267 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "type": "object",
-    "properties": {
-        "image": {
-            "type": "object",
-            "properties": {
-                "pullPolicy": {
-                    "type": "string"
-                },
-                "repository": {
-                    "type": "string"
-                },
-                "tag": {
-                    "type": "string"
-                }
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "global": {
+      "description": "Global values are values that can be accessed from any chart or subchart by exactly the same name.",
+      "required": [],
+      "title": "global",
+      "type": "object"
+    },
+    "image": {
+      "additionalProperties": false,
+      "properties": {
+        "pullPolicy": {
+          "default": "IfNotPresent",
+          "title": "pullPolicy",
+          "type": "string"
+        },
+        "repository": {
+          "default": "ghcr.io/mschulte/nixhorn-webhook",
+          "title": "repository",
+          "type": "string"
+        },
+        "tag": {
+          "default": "0.1.0",
+          "title": "tag",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "pullPolicy",
+        "tag"
+      ],
+      "title": "image",
+      "type": "object"
+    },
+    "livenessProbe": {
+      "additionalProperties": false,
+      "properties": {
+        "initialDelaySeconds": {
+          "default": 10,
+          "title": "initialDelaySeconds",
+          "type": "integer"
+        },
+        "periodSeconds": {
+          "default": 10,
+          "title": "periodSeconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "initialDelaySeconds",
+        "periodSeconds"
+      ],
+      "title": "livenessProbe",
+      "type": "object"
+    },
+    "readinessProbe": {
+      "additionalProperties": false,
+      "properties": {
+        "initialDelaySeconds": {
+          "default": 5,
+          "title": "initialDelaySeconds",
+          "type": "integer"
+        },
+        "periodSeconds": {
+          "default": 5,
+          "title": "periodSeconds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "initialDelaySeconds",
+        "periodSeconds"
+      ],
+      "title": "readinessProbe",
+      "type": "object"
+    },
+    "replicaCount": {
+      "default": 1,
+      "title": "replicaCount",
+      "type": "integer"
+    },
+    "resources": {
+      "additionalProperties": false,
+      "properties": {
+        "limits": {
+          "additionalProperties": false,
+          "properties": {
+            "cpu": {
+              "default": "100m",
+              "title": "cpu",
+              "type": "string"
+            },
+            "memory": {
+              "default": "128Mi",
+              "title": "memory",
+              "type": "string"
             }
+          },
+          "required": [
+            "cpu",
+            "memory"
+          ],
+          "title": "limits",
+          "type": "object"
         },
-        "livenessProbe": {
-            "type": "object",
-            "properties": {
-                "initialDelaySeconds": {
-                    "type": "integer"
-                },
-                "periodSeconds": {
-                    "type": "integer"
-                }
+        "requests": {
+          "additionalProperties": false,
+          "properties": {
+            "cpu": {
+              "default": "50m",
+              "title": "cpu",
+              "type": "string"
+            },
+            "memory": {
+              "default": "64Mi",
+              "title": "memory",
+              "type": "string"
             }
+          },
+          "required": [
+            "cpu",
+            "memory"
+          ],
+          "title": "requests",
+          "type": "object"
+        }
+      },
+      "required": [
+        "limits",
+        "requests"
+      ],
+      "title": "resources",
+      "type": "object"
+    },
+    "securityContext": {
+      "additionalProperties": false,
+      "description": "Admission controller security context.",
+      "required": [],
+      "title": "securityContext",
+      "type": "object"
+    },
+    "service": {
+      "additionalProperties": false,
+      "properties": {
+        "port": {
+          "default": 443,
+          "title": "port",
+          "type": "integer"
         },
-        "readinessProbe": {
-            "type": "object",
-            "properties": {
-                "initialDelaySeconds": {
-                    "type": "integer"
-                },
-                "periodSeconds": {
-                    "type": "integer"
+        "type": {
+          "default": "ClusterIP",
+          "title": "type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "port"
+      ],
+      "title": "service",
+      "type": "object"
+    },
+    "webhook": {
+      "additionalProperties": false,
+      "properties": {
+        "failurePolicy": {
+          "default": "Ignore",
+          "enum": [
+            "Ignore",
+            "Fail"
+          ],
+          "required": [],
+          "title": "failurePolicy"
+        },
+        "longhornNamespace": {
+          "default": "longhorn-system",
+          "title": "longhornNamespace",
+          "type": "string"
+        },
+        "pathPatch": {
+          "default": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/run/wrappers/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin",
+          "description": "PATH that's patched into each longhorn container's PATH.\nsee: https://github.com/NixOS/nixpkgs/blob/c7e10647eadb53b7cf3552a53e8bb33c8248c8c3/pkgs/applications/networking/cluster/k3s/docs/examples/STORAGE.md",
+          "title": "pathPatch",
+          "type": "string"
+        },
+        "port": {
+          "default": 8443,
+          "title": "port",
+          "type": "integer"
+        },
+        "timeoutSeconds": {
+          "default": 10,
+          "title": "timeoutSeconds",
+          "type": "integer"
+        },
+        "tls": {
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "properties": {
+                "type": {
+                  "const": "insecure",
+                  "description": "Uses pre-generated certificates from chart files (default)",
+                  "required": []
                 }
-            }
-        },
-        "replicaCount": {
-            "type": "integer"
-        },
-        "resources": {
-            "type": "object",
-            "properties": {
-                "limits": {
-                    "type": "object",
-                    "properties": {
-                        "cpu": {
-                            "type": "string"
-                        },
-                        "memory": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "requests": {
-                    "type": "object",
-                    "properties": {
-                        "cpu": {
-                            "type": "string"
-                        },
-                        "memory": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "securityContext": {
-            "type": "object"
-        },
-        "service": {
-            "type": "object",
-            "properties": {
-                "port": {
-                    "type": "integer"
+              },
+              "required": [
+                "type"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "name": {
+                  "description": "References an existing Kubernetes secret by name",
+                  "type": "string"
                 },
                 "type": {
-                    "type": "string"
+                  "const": "secret",
+                  "required": []
                 }
+              },
+              "required": [
+                "type",
+                "name"
+              ],
+              "type": "object"
             }
-        },
-        "webhook": {
-            "type": "object",
-            "properties": {
-                "failurePolicy": {
-                    "type": "string"
-                },
-                "longhornNamespace": {
-                    "type": "string"
-                },
-                "pathPatch": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "integer"
-                },
-                "timeoutSeconds": {
-                    "type": "integer"
-                },
-                "tls": {
-                    "type": "object",
-                    "properties": {
-                        "cert": {
-                            "type": "string"
-                        },
-                        "key": {
-                            "type": "string"
-                        },
-                        "type": {
-                            "type": "string"
-                        }
-                    }
-                }
+          ],
+          "properties": {
+            "type": {
+              "default": "insecure",
+              "title": "type",
+              "type": "string"
             }
+          },
+          "required": [
+            "type"
+          ],
+          "title": "tls"
         }
+      },
+      "required": [
+        "port",
+        "pathPatch",
+        "longhornNamespace",
+        "timeoutSeconds"
+      ],
+      "title": "webhook",
+      "type": "object"
     }
+  },
+  "required": [
+    "replicaCount",
+    "image",
+    "webhook",
+    "securityContext",
+    "service",
+    "resources",
+    "livenessProbe",
+    "readinessProbe"
+  ],
+  "type": "object"
 }

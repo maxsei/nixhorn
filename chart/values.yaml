@@ -17,26 +17,28 @@ webhook:
   # @schema
   # required: false
   # enum: [Ignore,Fail]
+  # @schema
   failurePolicy: Ignore
 
   timeoutSeconds: 10
 
   # @schema
+  # required: false
   # oneOf:
-  #   - required: [cert, key]
+  #   - type: object
   #     properties:
   #       type:
-  #         const: literal
-  #       cert:
-  #         type: string
-  #       key:
-  #         type: string
-  #   - required: [name]
+  #         const: insecure
+  #         description: Uses pre-generated certificates from chart files (default)
+  #     required: [type]
+  #   - type: object
   #     properties:
   #       type:
   #         const: secret
   #       name:
   #         type: string
+  #         description: References an existing Kubernetes secret by name
+  #     required: [type, name]
   # @schema
   tls:
     type: insecure

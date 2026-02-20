@@ -1,0 +1,14 @@
+{{- if eq .Values.webhook.tls.type "insecure" }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "nixhorn-webhook.tlsConfigMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "nixhorn-webhook.labels" . | nindent 4 }}
+data:
+  tls.crt: |
+{{ .Files.Get "files/insecure.crt" | indent 4 }}
+  tls.key: |
+{{ .Files.Get "files/insecure.key" | indent 4 }}
+{{- end }}

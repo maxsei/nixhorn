@@ -13,7 +13,9 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/tls: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- if eq .Values.webhook.tls.type "insecure" }}
+        checksum/tls: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
       labels:
         {{- include "nixhorn-webhook.selectorLabels" . | nindent 8 }}
     spec:
@@ -53,6 +55,15 @@ spec:
           readOnly: true
       volumes:
       - name: tls
+        {{- if eq .Values.webhook.tls.type "insecure" }}
+        configMap:
+          name: {{ include "nixhorn-webhook.tlsConfigMapName" . }}
+          items:
+          - key: tls.crt
+            path: tls.crt
+          - key: tls.key
+            path: tls.key
+        {{- else }}
         secret:
           secretName: {{ include "nixhorn-webhook.tlsSecretName" . }}
           items:
@@ -60,3 +71,4 @@ spec:
             path: tls.crt
           - key: tls.key
             path: tls.key
+        {{- end }}

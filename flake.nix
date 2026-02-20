@@ -30,6 +30,7 @@
           overlays = [
             (import ./overlays/default.nix)
             (final: prev: {
+              helm-schema = final.callPackage ./packages/helm-schema.nix { };
               nixidy = nixidy.packages.${system};
               nixidyEnvs = nixidy.lib.mkEnvs {
                 pkgs = final;
@@ -58,9 +59,13 @@
               inherit program;
             };
             helmGenSchema = pkgs.writeShellScript "helm-gen-schema" ''
-              ${pkgs.kubernetes-helmPlugins.helm-schema}/helm-schema/bin/schema \
-                -f ./chart/values.yaml \
-                -o ./chart/values.schema.json
+              temp="$(mktemp -d)"
+              trap 'rm -rf "$temp"' EXIT
+              PWD_OLD="$(pwd)"
+              cp -r "$PWD_OLD/chart" "$temp"
+              cd "$temp/chart"
+              ${pkgs.helm-schema}/bin/helm-schema
+              cp ./values.schema.json "$PWD_OLD/chart"
             '';
             helmValidate = pkgs.writeShellScript "helm-validate" ''
               set -ex
@@ -68,9 +73,8 @@
               ${pkgs.kubernetes-helm}/bin/helm template test-release ./chart > /dev/null
             '';
           in
-          rec {
+          {
             start = mkApp "${runner}/bin/microvm-run";
-            default = start;
             stop = mkApp "${runner}/bin/microvm-shutdown";
             helmGenSchema = mkApp "${helmGenSchema}";
             helmValidate = mkApp "${helmValidate}";
