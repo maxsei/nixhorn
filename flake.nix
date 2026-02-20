@@ -38,15 +38,6 @@
               type = "app";
               inherit program;
             };
-            helmGenSchema = pkgs.writeShellScript "helm-gen-schema" ''
-              temp="$(mktemp -d)"
-              trap 'rm -rf "$temp"' EXIT
-              PWD_OLD="$(pwd)"
-              cp -r "$PWD_OLD/manifests/chart" "$temp"
-              cd "$temp/chart"
-              ${pkgs.helm-schema}/bin/helm-schema
-              cp ./values.schema.json "$PWD_OLD/manifests/chart"
-            '';
             helmValidate = pkgs.writeShellScript "helm-validate" ''
               set -ex
               ${pkgs.kubernetes-helm}/bin/helm lint ./manifests/chart
@@ -56,13 +47,13 @@
           {
             start = mkApp "${runner}/bin/microvm-run";
             stop = mkApp "${runner}/bin/microvm-shutdown";
-            helmGenSchema = mkApp "${helmGenSchema}";
             helmValidate = mkApp "${helmValidate}";
           };
         packages = {
           microvm = self.nixosConfigurations.microvm.config.system.build.toplevel;
           nixhorn = pkgs.nixhorn;
           nixhorn-image = pkgs.nixhorn-image;
+          nixhorn-chart = pkgs.nixhorn-chart;
           nixhorn-manifests = pkgs.nixhorn-manifests;
         };
       }

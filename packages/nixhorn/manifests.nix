@@ -1,4 +1,10 @@
-{ pkgs, ... }:
+{
+  kubernetes-helm,
+  kustomize,
+  nixhorn-chart,
+  runCommand,
+  writers,
+}:
 let
   # https://raw.githubusercontent.com/longhorn/charts/refs/tags/longhorn-1.11.0/charts/longhorn/values.yaml
   longhorn-chart = builtins.fetchTarball {
@@ -27,7 +33,7 @@ let
     };
   };
 
-  kustomization = pkgs.writers.writeYAML "kustomization.yaml" {
+  kustomization = writers.writeYAML "kustomization.yaml" {
     apiVersion = "kustomize.config.k8s.io/v1beta1";
     kind = "Kustomization";
     helmGlobals.chartHome = ".";
@@ -47,9 +53,9 @@ let
     components = [ "./manifests" ];
   };
 in
-pkgs.runCommand "nixhorn-manifests"
+runCommand "nixhorn-manifests"
   {
-    nativeBuildInputs = with pkgs; [
+    nativeBuildInputs = [
       kubernetes-helm
       kustomize
     ];
@@ -57,7 +63,7 @@ pkgs.runCommand "nixhorn-manifests"
   (''
     cp ${kustomization} kustomization.yaml
     cp -r ${longhorn-chart} longhorn
-    cp -r ${../../manifests/chart} nixhorn-webhook
+    cp -r ${nixhorn-chart} nixhorn-webhook
     cp -r ${../../manifests} manifests
     kustomize build --enable-helm . > $out
   '')
