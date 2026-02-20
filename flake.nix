@@ -42,15 +42,15 @@
               temp="$(mktemp -d)"
               trap 'rm -rf "$temp"' EXIT
               PWD_OLD="$(pwd)"
-              cp -r "$PWD_OLD/chart" "$temp"
+              cp -r "$PWD_OLD/manifests/chart" "$temp"
               cd "$temp/chart"
               ${pkgs.helm-schema}/bin/helm-schema
-              cp ./values.schema.json "$PWD_OLD/chart"
+              cp ./values.schema.json "$PWD_OLD/manifests/chart"
             '';
             helmValidate = pkgs.writeShellScript "helm-validate" ''
               set -ex
-              ${pkgs.kubernetes-helm}/bin/helm lint ./chart
-              ${pkgs.kubernetes-helm}/bin/helm template test-release ./chart > /dev/null
+              ${pkgs.kubernetes-helm}/bin/helm lint ./manifests/chart
+              ${pkgs.kubernetes-helm}/bin/helm template test-release ./manifests/chart > /dev/null
             '';
           in
           {

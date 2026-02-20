@@ -44,7 +44,7 @@ let
         valuesInline = longhorn-values;
       }
     ];
-    components = [ "./patches" ];
+    components = [ "./manifests" ];
   };
 in
 pkgs.runCommand "nixhorn-manifests"
@@ -57,7 +57,7 @@ pkgs.runCommand "nixhorn-manifests"
   (''
     cp ${kustomization} kustomization.yaml
     cp -r ${longhorn-chart} longhorn
-    cp -r ${../../chart} nixhorn-webhook
-    cp -r ${../../patches} patches
+    cp -r ${../../manifests/chart} nixhorn-webhook
+    cp -r ${../../manifests} manifests
     kustomize build --enable-helm . > $out
   '')
