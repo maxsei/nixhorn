@@ -1,0 +1,3 @@
+release:patch:
+- changed-files:
+  - any-glob-to-any-file: '**'

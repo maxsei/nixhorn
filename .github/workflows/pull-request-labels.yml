@@ -1,0 +1,53 @@
+name: "Pull Request Labels"
+on:
+  pull_request_target:
+    types: [opened]
+jobs:
+  labeler:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure Labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = [
+              {
+                name: 'release:patch',
+                description: 'Backward-compatible bug fixes (x.x.X)',
+                color: '0E8A16'
+              },
+              {
+                name: 'release:minor',
+                description: 'Backward-compatible new features (x.X.0)',
+                color: 'FFA500'
+              },
+              {
+                name: 'release:major',
+                description: 'Breaking changes or major updates (X.0.0)',
+                color: 'D73A4A'
+              }
+            ];
+            for (const label of labels) {
+              const labelProps = {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  description: label.description,
+                  color: label.color
+                }
+              try {
+                await github.rest.issues.createLabel(labelProps);
+                console.log(`Created label: ${label.name}`);
+              } catch (error) {
+                if (error.status === 422) {
+                  await github.rest.issues.updateLabel(labelProps);
+                  console.log(`Updated label: ${label.name}`);
+                } else {
+                  throw error;
+                }
+              }
+            }
+      - uses: actions/labeler@v5

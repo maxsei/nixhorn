@@ -1,0 +1,213 @@
+name: Build and Release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - name: Check for release label
+        id: check_label
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          echo "Labels: $LABELS"
+
+          BUMP_TYPE="none"
+          if echo "$LABELS" | grep -q "release:major"; then
+            BUMP_TYPE="major"
+          elif echo "$LABELS" | grep -q "release:minor"; then
+            BUMP_TYPE="minor"
+          elif echo "$LABELS" | grep -q "release:patch"; then
+            BUMP_TYPE="patch"
+          fi
+
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "Bump type: $BUMP_TYPE"
+
+      - name: Checkout code
+        if: steps.check_label.outputs.bump_type != 'none'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Nix
+        if: steps.check_label.outputs.bump_type != 'none'
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Read current version
+        if: steps.check_label.outputs.bump_type != 'none'
+        id: read_version
+        run: |
+          CURRENT_VERSION=$(cat packages/nixhorn-webhook/VERSION)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Bump version
+        if: steps.check_label.outputs.bump_type != 'none'
+        id: bump_version
+        run: |
+          CURRENT_VERSION="${{ steps.read_version.outputs.current_version }}"
+          BUMP_TYPE="${{ steps.check_label.outputs.bump_type }}"
+
+          # Parse version (assuming semver format: major.minor.patch)
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+
+          # Bump version based on label
+          case "$BUMP_TYPE" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          NEW_VERSION="$major.$minor.$patch"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+          # Update VERSION file
+          echo "$NEW_VERSION" > packages/nixhorn-webhook/VERSION
+
+      - name: Configure Git
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit version bump
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          git add packages/nixhorn-webhook/VERSION
+          git commit -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }}" || echo "No changes to commit"
+          git push origin ${{ github.ref_name }} || echo "Nothing to push"
+
+      - name: Build x86_64 image
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          nix build .#packages.x86_64-linux.nixhorn-webhook-image --out-link nixhorn-webhook-image-amd64
+          echo "Built x86_64 image"
+
+      - name: Build aarch64 image
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          nix build .#packages.aarch64-linux.nixhorn-webhook-image --out-link nixhorn-webhook-image-arm64
+          echo "Built aarch64 image"
+
+      - name: Log in to GitHub Container Registry
+        if: steps.check_label.outputs.bump_type != 'none'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push x86_64 image
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          VERSION="${{ steps.bump_version.outputs.new_version }}"
+          skopeo copy docker-archive:./nixhorn-webhook-image-amd64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64
+          echo "Pushed ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64"
+
+      - name: Push aarch64 image
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          VERSION="${{ steps.bump_version.outputs.new_version }}"
+          skopeo copy docker-archive:./nixhorn-webhook-image-arm64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
+          echo "Pushed ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64"
+
+      - name: Create and push multi-arch manifest
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          VERSION="${{ steps.bump_version.outputs.new_version }}"
+          
+          # Create multi-arch manifest for version tag
+          docker manifest create ghcr.io/mschulte/nixhorn-webhook:${VERSION} \
+            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64 \
+            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
+          
+          docker manifest push ghcr.io/mschulte/nixhorn-webhook:${VERSION}
+          
+          # Create multi-arch manifest for latest tag
+          docker manifest create ghcr.io/mschulte/nixhorn-webhook:latest \
+            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64 \
+            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
+          
+          docker manifest push ghcr.io/mschulte/nixhorn-webhook:latest
+          
+          echo "Pushed multi-arch manifests for ${VERSION} and latest"
+
+      - name: Build and push Helm chart
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          VERSION="${{ steps.bump_version.outputs.new_version }}"
+          
+          # Build chart
+          nix build .#packages.x86_64-linux.nixhorn-webhook-chart --out-link ./chart
+          
+          # Package chart
+          helm package ./chart --version ${VERSION} --app-version ${VERSION}
+          
+          # Push chart as OCI artifact
+          helm push nixhorn-webhook-${VERSION}.tgz oci://ghcr.io/mschulte/nixhorn-webhook/charts
+          
+          echo "Pushed Helm chart to ghcr.io/mschulte/nixhorn-webhook/charts/nixhorn-webhook:${VERSION}"
+
+      - name: Create GitHub Release
+        if: steps.check_label.outputs.bump_type != 'none'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.bump_version.outputs.new_version }}
+          release_name: Release v${{ steps.bump_version.outputs.new_version }}
+          body: |
+            ## Container Images
+
+            Pull the multi-arch image:
+            ```
+            docker pull ghcr.io/mschulte/nixhorn-webhook:${{ steps.bump_version.outputs.new_version }}
+            ```
+
+            Or use latest:
+            ```
+            docker pull ghcr.io/mschulte/nixhorn-webhook:latest
+            ```
+
+            Architecture-specific tags:
+            - `ghcr.io/mschulte/nixhorn-webhook:${{ steps.bump_version.outputs.new_version }}-amd64`
+            - `ghcr.io/mschulte/nixhorn-webhook:${{ steps.bump_version.outputs.new_version }}-arm64`
+
+            ## Helm Chart
+
+            Install via OCI:
+            ```
+            helm install nixhorn-webhook oci://ghcr.io/mschulte/nixhorn-webhook/charts/nixhorn-webhook --version ${{ steps.bump_version.outputs.new_version }}
+            ```
+
+            ## Kustomize
+
+            Apply the full stack (includes Longhorn + webhook):
+            ```
+            kubectl apply -k https://github.com/maxsei/nixhorn-webhook//microvm/services/k3s/manifests?ref=v${{ steps.bump_version.outputs.new_version }}
+            ```
+          draft: false
+          prerelease: false
