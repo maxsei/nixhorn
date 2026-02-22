@@ -30,34 +30,30 @@ jobs:
       - name: Build nixhorn-webhook chart
         run: nix build .#packages.x86_64-linux.nixhorn-webhook-chart
 
-  # QEMU emulation for aarch64 is slow; skipping in CI for now
-  # build-aarch64:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
-  #       with:
-  #         platforms: arm64
-  #
-  #     - name: Install Nix
-  #       uses: DeterminateSystems/nix-installer-action@main
-  #
-  #     - name: Setup Magic Nix Cache
-  #       uses: DeterminateSystems/magic-nix-cache-action@main
-  #
-  #     - name: Configure Nix for cross-compilation
-  #       run: |
-  #         echo "extra-platforms = aarch64-linux" | sudo tee -a /etc/nix/nix.conf
-  #         sudo systemctl restart nix-daemon || true
-  #
-  #     - name: Build nixhorn-webhook binary (aarch64)
-  #       run: nix build .#packages.aarch64-linux.nixhorn-webhook --max-jobs 2
-  #
-  #     - name: Build nixhorn-webhook image (aarch64)
-  #       run: nix build .#packages.aarch64-linux.nixhorn-webhook-image --max-jobs 2
+  build-aarch64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            extra-platforms = aarch64-linux
+
+      - name: Setup QEMU binfmt for Nix builds
+        run: |
+          nix run nixpkgs#qemu-user-static -- --reset -p yes
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build nixhorn-webhook binary (aarch64)
+        run: nix build .#packages.aarch64-linux.nixhorn-webhook --max-jobs 2
+
+      - name: Build nixhorn-webhook image (aarch64)
+        run: nix build .#packages.aarch64-linux.nixhorn-webhook-image --max-jobs 2
 
   validate-helm:
     runs-on: ubuntu-latest
