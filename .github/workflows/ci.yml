@@ -10,7 +10,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64-linux
+            runner: ubuntu-latest
+          - arch: aarch64-linux
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,39 +28,15 @@ jobs:
       - name: Setup Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Build nixhorn-webhook binary
-        run: nix build .#packages.x86_64-linux.nixhorn-webhook
+      - name: Build nixhorn-webhook binary (${{ matrix.arch }})
+        run: nix build .#packages.${{ matrix.arch }}.nixhorn-webhook
 
-      - name: Build nixhorn-webhook image
-        run: nix build .#packages.x86_64-linux.nixhorn-webhook-image
+      - name: Build nixhorn-webhook image (${{ matrix.arch }})
+        run: nix build .#packages.${{ matrix.arch }}.nixhorn-webhook-image
 
       - name: Build nixhorn-webhook chart
-        run: nix build .#packages.x86_64-linux.nixhorn-webhook-chart
-
-  build-aarch64:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-        with:
-          extra-conf: |
-            extra-platforms = aarch64-linux
-
-      - name: Setup QEMU binfmt for Nix builds
-        run: |
-          nix run nixpkgs#qemu-user-static -- --reset -p yes
-
-      - name: Setup Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@main
-
-      - name: Build nixhorn-webhook binary (aarch64)
-        run: nix build .#packages.aarch64-linux.nixhorn-webhook --max-jobs 2
-
-      - name: Build nixhorn-webhook image (aarch64)
-        run: nix build .#packages.aarch64-linux.nixhorn-webhook-image --max-jobs 2
+        if: matrix.arch == 'x86_64-linux'
+        run: nix build .#packages.${{ matrix.arch }}.nixhorn-webhook-chart
 
   validate-helm:
     runs-on: ubuntu-latest
