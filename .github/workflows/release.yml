@@ -42,9 +42,25 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up QEMU
+        if: steps.check_label.outputs.bump_type != 'none'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
       - name: Install Nix
         if: steps.check_label.outputs.bump_type != 'none'
         uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Magic Nix Cache
+        if: steps.check_label.outputs.bump_type != 'none'
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Configure Nix for cross-compilation
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          echo "extra-platforms = aarch64-linux" | sudo tee -a /etc/nix/nix.conf
+          sudo systemctl restart nix-daemon || true
 
       - name: Read current version
         if: steps.check_label.outputs.bump_type != 'none'
@@ -103,14 +119,19 @@ jobs:
       - name: Build x86_64 image
         if: steps.check_label.outputs.bump_type != 'none'
         run: |
-          nix build .#packages.x86_64-linux.nixhorn-webhook-image --out-link nixhorn-webhook-image-amd64
+          nix build .#packages.x86_64-linux.nixhorn-webhook-image --out-link nixhorn-webhook-image-amd64 --max-jobs 2
           echo "Built x86_64 image"
 
       - name: Build aarch64 image
         if: steps.check_label.outputs.bump_type != 'none'
         run: |
-          nix build .#packages.aarch64-linux.nixhorn-webhook-image --out-link nixhorn-webhook-image-arm64
+          nix build .#packages.aarch64-linux.nixhorn-webhook-image --out-link nixhorn-webhook-image-arm64 --max-jobs 2
           echo "Built aarch64 image"
+
+      - name: Install skopeo and docker
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          nix shell nixpkgs#skopeo nixpkgs#docker -c echo "Installed skopeo and docker"
 
       - name: Log in to GitHub Container Registry
         if: steps.check_label.outputs.bump_type != 'none'
@@ -124,51 +145,51 @@ jobs:
         if: steps.check_label.outputs.bump_type != 'none'
         run: |
           VERSION="${{ steps.bump_version.outputs.new_version }}"
-          skopeo copy docker-archive:./nixhorn-webhook-image-amd64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64
+          nix shell nixpkgs#skopeo -c skopeo copy docker-archive:./nixhorn-webhook-image-amd64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64
           echo "Pushed ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64"
 
       - name: Push aarch64 image
         if: steps.check_label.outputs.bump_type != 'none'
         run: |
           VERSION="${{ steps.bump_version.outputs.new_version }}"
-          skopeo copy docker-archive:./nixhorn-webhook-image-arm64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
+          nix shell nixpkgs#skopeo -c skopeo copy docker-archive:./nixhorn-webhook-image-arm64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
           echo "Pushed ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64"
 
       - name: Create and push multi-arch manifest
         if: steps.check_label.outputs.bump_type != 'none'
         run: |
           VERSION="${{ steps.bump_version.outputs.new_version }}"
-          
+
           # Create multi-arch manifest for version tag
-          docker manifest create ghcr.io/mschulte/nixhorn-webhook:${VERSION} \
+          nix shell nixpkgs#docker -c docker manifest create ghcr.io/mschulte/nixhorn-webhook:${VERSION} \
             --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64 \
             --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
-          
-          docker manifest push ghcr.io/mschulte/nixhorn-webhook:${VERSION}
-          
+
+          nix shell nixpkgs#docker -c docker manifest push ghcr.io/mschulte/nixhorn-webhook:${VERSION}
+
           # Create multi-arch manifest for latest tag
-          docker manifest create ghcr.io/mschulte/nixhorn-webhook:latest \
+          nix shell nixpkgs#docker -c docker manifest create ghcr.io/mschulte/nixhorn-webhook:latest \
             --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64 \
             --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
-          
-          docker manifest push ghcr.io/mschulte/nixhorn-webhook:latest
-          
+
+          nix shell nixpkgs#docker -c docker manifest push ghcr.io/mschulte/nixhorn-webhook:latest
+
           echo "Pushed multi-arch manifests for ${VERSION} and latest"
 
       - name: Build and push Helm chart
         if: steps.check_label.outputs.bump_type != 'none'
         run: |
           VERSION="${{ steps.bump_version.outputs.new_version }}"
-          
+
           # Build chart
           nix build .#packages.x86_64-linux.nixhorn-webhook-chart --out-link ./chart
-          
+
           # Package chart
-          helm package ./chart --version ${VERSION} --app-version ${VERSION}
-          
+          nix shell nixpkgs#kubernetes-helm -c helm package ./chart --version ${VERSION} --app-version ${VERSION}
+
           # Push chart as OCI artifact
-          helm push nixhorn-webhook-${VERSION}.tgz oci://ghcr.io/mschulte/nixhorn-webhook/charts
-          
+          nix shell nixpkgs#kubernetes-helm -c helm push nixhorn-webhook-${VERSION}.tgz oci://ghcr.io/mschulte/nixhorn-webhook/charts
+
           echo "Pushed Helm chart to ghcr.io/mschulte/nixhorn-webhook/charts/nixhorn-webhook:${VERSION}"
 
       - name: Create GitHub Release

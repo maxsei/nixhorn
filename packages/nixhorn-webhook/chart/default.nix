@@ -11,7 +11,7 @@ let
     name = "nixhorn-webhook";
     description = "A Kubernetes admission webhook that dynamically patches Longhorn pods with NixOS-compatible PATH environment variables";
     type = "application";
-    version = builtins.readFile ../VERSION;
+    version = lib.trim (builtins.readFile ../VERSION);
     appVersion = nixhorn-webhook-image.imageTag;
     keywords = [
       "longhorn"

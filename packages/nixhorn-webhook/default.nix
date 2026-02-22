@@ -1,7 +1,7 @@
-{ pkgs }:
+{ pkgs, lib }:
 pkgs.buildGoModule {
   pname = "nixhorn-webhook";
-  version = builtins.readFile ./VERSION;
+  version = lib.trim (builtins.readFile ./VERSION);
   src = ./src;
   vendorHash = "sha256-qVSUymTDYc2caXEUW6jmJ8July11xLuvmYGndjBpk58=";
   ldflags = [
