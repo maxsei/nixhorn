@@ -11,9 +11,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [x86_64-linux, aarch64-linux]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,15 +18,46 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - name: Build nixhorn-webhook binary (${{ matrix.arch }})
-        run: nix build .#packages.${{ matrix.arch }}.nixhorn-webhook
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Build nixhorn-webhook image (${{ matrix.arch }})
-        run: nix build .#packages.${{ matrix.arch }}.nixhorn-webhook-image
+      - name: Build nixhorn-webhook binary
+        run: nix build .#packages.x86_64-linux.nixhorn-webhook
+
+      - name: Build nixhorn-webhook image
+        run: nix build .#packages.x86_64-linux.nixhorn-webhook-image
 
       - name: Build nixhorn-webhook chart
-        if: matrix.arch == 'x86_64-linux'
         run: nix build .#packages.x86_64-linux.nixhorn-webhook-chart
+
+  # QEMU emulation for aarch64 is slow; skipping in CI for now
+  # build-aarch64:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #       with:
+  #         platforms: arm64
+  #
+  #     - name: Install Nix
+  #       uses: DeterminateSystems/nix-installer-action@main
+  #
+  #     - name: Setup Magic Nix Cache
+  #       uses: DeterminateSystems/magic-nix-cache-action@main
+  #
+  #     - name: Configure Nix for cross-compilation
+  #       run: |
+  #         echo "extra-platforms = aarch64-linux" | sudo tee -a /etc/nix/nix.conf
+  #         sudo systemctl restart nix-daemon || true
+  #
+  #     - name: Build nixhorn-webhook binary (aarch64)
+  #       run: nix build .#packages.aarch64-linux.nixhorn-webhook --max-jobs 2
+  #
+  #     - name: Build nixhorn-webhook image (aarch64)
+  #       run: nix build .#packages.aarch64-linux.nixhorn-webhook-image --max-jobs 2
 
   validate-helm:
     runs-on: ubuntu-latest
@@ -40,6 +68,9 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build chart
         run: nix build .#packages.x86_64-linux.nixhorn-webhook-chart --out-link ./chart
@@ -66,25 +97,27 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
       - name: Build chart (needed for kustomize)
         run: nix build .#packages.x86_64-linux.nixhorn-webhook-chart --out-link ./nixhorn-webhook-chart
 
       - name: Build manifests via kustomize
         run: |
-          # Create temp directory for kustomize build
           mkdir -p /tmp/kustomize-test
           cd /tmp/kustomize-test
-          
+
           # Copy kustomization from repo
           cp ${{ github.workspace }}/microvm/services/k3s/manifests/kustomization.yaml .
           cp -r ${{ github.workspace }}/microvm/services/k3s/manifests/*.yaml .
-          
+
           # Copy built chart
           cp -r ${{ github.workspace }}/nixhorn-webhook-chart ./nixhorn-webhook
-          
+
           # Fetch longhorn chart
           curl -sL https://github.com/longhorn/charts/releases/download/longhorn-1.11.0/longhorn-1.11.0.tgz | tar xz
-          
+
           # Create kustomization that references local charts
           cat > kustomization.yaml << 'EOF'
           apiVersion: kustomize.config.k8s.io/v1beta1
@@ -101,13 +134,13 @@ jobs:
           components:
             - ./manifests
           EOF
-          
+
           # Copy manifests component
           cp -r ${{ github.workspace }}/microvm/services/k3s/manifests ./manifests
-          
+
           # Build with kustomize
           nix shell nixpkgs#kustomize -c kustomize build --enable-helm . > /dev/null
-          
+
           echo "Kustomize build successful!"
 
   check-version-consistency:
@@ -119,43 +152,46 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
+      - name: Setup Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
       - name: Check VERSION file matches image tag
         run: |
           VERSION=$(cat packages/nixhorn-webhook/VERSION)
           echo "VERSION file: $VERSION"
-          
+
           # Build image and check its tag
           nix build .#packages.x86_64-linux.nixhorn-webhook-image --out-link ./image
           IMAGE_TAG=$(nix eval .#packages.x86_64-linux.nixhorn-webhook-image.passthru.version --raw)
           echo "Image tag: $IMAGE_TAG"
-          
+
           if [ "$VERSION" != "$IMAGE_TAG" ]; then
             echo "ERROR: VERSION file ($VERSION) != image tag ($IMAGE_TAG)"
             exit 1
           fi
-          
+
           echo "Version consistency check passed!"
 
       - name: Check chart version matches
         run: |
           VERSION=$(cat packages/nixhorn-webhook/VERSION)
-          
+
           # Build chart and check its version
           nix build .#packages.x86_64-linux.nixhorn-webhook-chart --out-link ./chart
           CHART_VERSION=$(grep '^version:' ./chart/Chart.yaml | awk '{print $2}')
           APP_VERSION=$(grep '^appVersion:' ./chart/Chart.yaml | awk '{print $2}')
-          
+
           echo "Chart version: $CHART_VERSION"
           echo "Chart appVersion: $APP_VERSION"
-          
+
           if [ "$VERSION" != "$CHART_VERSION" ]; then
             echo "ERROR: VERSION file ($VERSION) != chart version ($CHART_VERSION)"
             exit 1
           fi
-          
+
           if [ "$VERSION" != "$APP_VERSION" ]; then
             echo "ERROR: VERSION file ($VERSION) != chart appVersion ($APP_VERSION)"
             exit 1
           fi
-          
+
           echo "Chart version consistency check passed!"
