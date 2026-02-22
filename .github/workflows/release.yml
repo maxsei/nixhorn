@@ -174,38 +174,42 @@ jobs:
       - name: Push x86_64 image
         run: |
           VERSION="${{ needs.prepare-release.outputs.new_version }}"
-          nix shell nixpkgs#skopeo -c skopeo copy docker-archive:./nixhorn-webhook-image-amd64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64
-          echo "Pushed ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64"
+          OWNER="${{ github.repository_owner }}"
+          nix shell nixpkgs#skopeo -c skopeo copy docker-archive:./nixhorn-webhook-image-amd64 docker://ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-amd64
+          echo "Pushed ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-amd64"
 
       - name: Push aarch64 image
         run: |
           VERSION="${{ needs.prepare-release.outputs.new_version }}"
-          nix shell nixpkgs#skopeo -c skopeo copy docker-archive:./nixhorn-webhook-image-arm64 docker://ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
-          echo "Pushed ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64"
+          OWNER="${{ github.repository_owner }}"
+          nix shell nixpkgs#skopeo -c skopeo copy docker-archive:./nixhorn-webhook-image-arm64 docker://ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-arm64
+          echo "Pushed ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-arm64"
 
       - name: Create and push multi-arch manifest
         run: |
           VERSION="${{ needs.prepare-release.outputs.new_version }}"
+          OWNER="${{ github.repository_owner }}"
 
           # Create multi-arch manifest for version tag
-          nix shell nixpkgs#docker -c docker manifest create ghcr.io/mschulte/nixhorn-webhook:${VERSION} \
-            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64 \
-            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
+          nix shell nixpkgs#docker -c docker manifest create ghcr.io/${OWNER}/nixhorn-webhook:${VERSION} \
+            --amend ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-amd64 \
+            --amend ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-arm64
 
-          nix shell nixpkgs#docker -c docker manifest push ghcr.io/mschulte/nixhorn-webhook:${VERSION}
+          nix shell nixpkgs#docker -c docker manifest push ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}
 
           # Create multi-arch manifest for latest tag
-          nix shell nixpkgs#docker -c docker manifest create ghcr.io/mschulte/nixhorn-webhook:latest \
-            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-amd64 \
-            --amend ghcr.io/mschulte/nixhorn-webhook:${VERSION}-arm64
+          nix shell nixpkgs#docker -c docker manifest create ghcr.io/${OWNER}/nixhorn-webhook:latest \
+            --amend ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-amd64 \
+            --amend ghcr.io/${OWNER}/nixhorn-webhook:${VERSION}-arm64
 
-          nix shell nixpkgs#docker -c docker manifest push ghcr.io/mschulte/nixhorn-webhook:latest
+          nix shell nixpkgs#docker -c docker manifest push ghcr.io/${OWNER}/nixhorn-webhook:latest
 
           echo "Pushed multi-arch manifests for ${VERSION} and latest"
 
       - name: Build and push Helm chart
         run: |
           VERSION="${{ needs.prepare-release.outputs.new_version }}"
+          OWNER="${{ github.repository_owner }}"
 
           # Build chart
           nix build .#packages.x86_64-linux.nixhorn-webhook-chart --out-link ./chart
@@ -214,9 +218,9 @@ jobs:
           nix shell nixpkgs#kubernetes-helm -c helm package ./chart --version ${VERSION} --app-version ${VERSION}
 
           # Push chart as OCI artifact
-          nix shell nixpkgs#kubernetes-helm -c helm push nixhorn-webhook-${VERSION}.tgz oci://ghcr.io/mschulte/nixhorn-webhook/charts
+          nix shell nixpkgs#kubernetes-helm -c helm push nixhorn-webhook-${VERSION}.tgz oci://ghcr.io/${OWNER}/nixhorn-webhook/charts
 
-          echo "Pushed Helm chart to ghcr.io/mschulte/nixhorn-webhook/charts/nixhorn-webhook:${VERSION}"
+          echo "Pushed Helm chart to ghcr.io/${OWNER}/nixhorn-webhook/charts/nixhorn-webhook:${VERSION}"
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -230,30 +234,30 @@ jobs:
 
             Pull the multi-arch image:
             ```
-            docker pull ghcr.io/mschulte/nixhorn-webhook:${{ needs.prepare-release.outputs.new_version }}
+            docker pull ghcr.io/${{ github.repository_owner }}/nixhorn-webhook:${{ needs.prepare-release.outputs.new_version }}
             ```
 
             Or use latest:
             ```
-            docker pull ghcr.io/mschulte/nixhorn-webhook:latest
+            docker pull ghcr.io/${{ github.repository_owner }}/nixhorn-webhook:latest
             ```
 
             Architecture-specific tags:
-            - `ghcr.io/mschulte/nixhorn-webhook:${{ needs.prepare-release.outputs.new_version }}-amd64`
-            - `ghcr.io/mschulte/nixhorn-webhook:${{ needs.prepare-release.outputs.new_version }}-arm64`
+            - `ghcr.io/${{ github.repository_owner }}/nixhorn-webhook:${{ needs.prepare-release.outputs.new_version }}-amd64`
+            - `ghcr.io/${{ github.repository_owner }}/nixhorn-webhook:${{ needs.prepare-release.outputs.new_version }}-arm64`
 
             ## Helm Chart
 
             Install via OCI:
             ```
-            helm install nixhorn-webhook oci://ghcr.io/mschulte/nixhorn-webhook/charts/nixhorn-webhook --version ${{ needs.prepare-release.outputs.new_version }}
+            helm install nixhorn-webhook oci://ghcr.io/${{ github.repository_owner }}/nixhorn-webhook/charts/nixhorn-webhook --version ${{ needs.prepare-release.outputs.new_version }}
             ```
 
             ## Kustomize
 
             Apply the full stack (includes Longhorn + webhook):
             ```
-            kubectl apply -k https://github.com/maxsei/nixhorn-webhook//microvm/services/k3s/manifests?ref=v${{ needs.prepare-release.outputs.new_version }}
+            kubectl apply -k https://github.com/${{ github.repository }}//microvm/services/k3s/manifests?ref=v${{ needs.prepare-release.outputs.new_version }}
             ```
           draft: false
           prerelease: false
