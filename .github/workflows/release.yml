@@ -51,6 +51,18 @@ jobs:
       - name: Install Nix
         if: steps.check_label.outputs.bump_type != 'none'
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: |
+            extra-platforms = aarch64-linux
+
+      - name: Setup QEMU binfmt for Nix builds
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          nix run nixpkgs#qemu-user-static -- --reset -p yes
+
+      - name: Setup Magic Nix Cache
+        if: steps.check_label.outputs.bump_type != 'none'
+        uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Setup Magic Nix Cache
         if: steps.check_label.outputs.bump_type != 'none'
