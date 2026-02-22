@@ -112,8 +112,8 @@ jobs:
           cp ${{ github.workspace }}/microvm/services/k3s/manifests/kustomization.yaml .
           cp -r ${{ github.workspace }}/microvm/services/k3s/manifests/*.yaml .
 
-          # Copy built chart
-          cp -r ${{ github.workspace }}/nixhorn-webhook-chart ./nixhorn-webhook
+          # Copy built chart (dereference symlinks with -L)
+          cp -rL ${{ github.workspace }}/nixhorn-webhook-chart ./nixhorn-webhook
 
           # Fetch longhorn chart
           curl -sL https://github.com/longhorn/charts/releases/download/longhorn-1.11.0/longhorn-1.11.0.tgz | tar xz
