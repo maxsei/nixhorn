@@ -1,4 +1,4 @@
-{ pkgs }:
+{ pkgs, lib }:
 pkgs.buildGoModule {
   pname = "nixhorn-webhook";
   version = lib.trim (builtins.readFile ./VERSION);
