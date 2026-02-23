@@ -9,6 +9,31 @@ on:
       - master
 
 jobs:
+  validate-release-labels:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check release labels
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+
+          # Count release labels
+          RELEASE_LABEL_COUNT=0
+          if echo "$LABELS" | grep -q "release:major"; then
+            RELEASE_LABEL_COUNT=$((RELEASE_LABEL_COUNT + 1))
+          fi
+          if echo "$LABELS" | grep -q "release:minor"; then
+            RELEASE_LABEL_COUNT=$((RELEASE_LABEL_COUNT + 1))
+          fi
+          if echo "$LABELS" | grep -q "release:patch"; then
+            RELEASE_LABEL_COUNT=$((RELEASE_LABEL_COUNT + 1))
+          fi
+
+          if [ $RELEASE_LABEL_COUNT -gt 1 ]; then
+            echo "ERROR: Multiple release labels found! Only one release label (release:major, release:minor, or release:patch) is allowed."
+            exit 1
+          fi
+
   build:
     strategy:
       matrix:
