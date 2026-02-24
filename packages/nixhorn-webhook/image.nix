@@ -1,6 +1,6 @@
 { pkgs, nixhorn-webhook }:
 (pkgs.dockerTools.buildImage {
-  name = "ghcr.io/mschulte/nixhorn-webhook";
+  name = "ghcr.io/maxsei/nixhorn-webhook";
   tag = nixhorn-webhook.version;
   copyToRoot = pkgs.buildEnv {
     name = "image-root";
