@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/mschulte/nixhorn-webhook
+  repository: ghcr.io/maxsei/nixhorn-webhook
   pullPolicy: IfNotPresent
   # @schema
   # required: false
