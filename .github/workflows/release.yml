@@ -14,7 +14,13 @@ permissions:
 jobs:
   prepare-release:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
+    if: |
+      github.event.pull_request.merged == true &&
+      (
+        contains(github.event.pull_request.labels.*.name, 'release:major') ||
+        contains(github.event.pull_request.labels.*.name, 'release:minor') ||
+        contains(github.event.pull_request.labels.*.name, 'release:patch')
+      )
     outputs:
       bump_type: ${{ steps.check_label.outputs.bump_type }}
       new_version: ${{ steps.bump_version.outputs.new_version }}
@@ -39,14 +45,12 @@ jobs:
           echo "Bump type: $BUMP_TYPE"
 
       - name: Checkout code
-        if: steps.check_label.outputs.bump_type != 'none'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Read current version
-        if: steps.check_label.outputs.bump_type != 'none'
         id: read_version
         run: |
           CURRENT_VERSION=$(cat packages/nixhorn-webhook/VERSION)
@@ -54,7 +58,6 @@ jobs:
           echo "Current version: $CURRENT_VERSION"
 
       - name: Bump version
-        if: steps.check_label.outputs.bump_type != 'none'
         id: bump_version
         run: |
           CURRENT_VERSION="${{ steps.read_version.outputs.current_version }}"
@@ -87,21 +90,25 @@ jobs:
           echo "$NEW_VERSION" > packages/nixhorn-webhook/VERSION
 
       - name: Configure Git
-        if: steps.check_label.outputs.bump_type != 'none'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Commit version bump
-        if: steps.check_label.outputs.bump_type != 'none'
         run: |
           git add packages/nixhorn-webhook/VERSION
           git commit -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }}" || echo "No changes to commit"
           git push origin ${{ github.ref_name }} || echo "Nothing to push"
 
+      - name: Create and push git tag
+        run: |
+          VERSION="${{ steps.bump_version.outputs.new_version }}"
+          git tag -a "v${VERSION}" -m "Release version ${VERSION}"
+          git push origin "v${VERSION}"
+          echo "Created and pushed tag v${VERSION}"
+
   build-images:
     needs: prepare-release
-    if: needs.prepare-release.outputs.bump_type != 'none'
     strategy:
       matrix:
         include:
@@ -117,7 +124,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.ref_name }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -140,13 +147,12 @@ jobs:
   push-release:
     needs: [prepare-release, build-images]
     runs-on: ubuntu-latest
-    if: needs.prepare-release.outputs.bump_type != 'none'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.ref_name }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
