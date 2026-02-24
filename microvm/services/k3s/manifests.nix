@@ -65,6 +65,7 @@ let
       '';
 in
 {
+  services.nixhorn-loader.enable = true;
   services.k3s.manifests.nixhorn = {
     target = "nixhorn"; # must be directory
     source = pkgs.linkFarm "k3s-manifests-nixhorn" {

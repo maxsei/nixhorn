@@ -65,6 +65,7 @@
       {
         nixosConfigurations.microvm = pkgs.nixos {
           imports = [
+            ./modules
             microvm.nixosModules.microvm
             ./microvm
           ];

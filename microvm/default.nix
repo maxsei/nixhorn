@@ -5,6 +5,5 @@
     ./hardware.nix
     ./services/openiscsi.nix
     ./services/k3s
-    ./services/nixhorn-loader.nix
   ];
 }

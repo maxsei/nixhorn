@@ -1,0 +1,6 @@
+{ ... }:
+{
+  imports = [
+    ./nixhorn-loader.nix
+  ];
+}
