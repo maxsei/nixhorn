@@ -99,6 +99,14 @@ jobs:
           git commit -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }}" || echo "No changes to commit"
           git push origin ${{ github.ref_name }} || echo "Nothing to push"
 
+      - name: Create and push git tag
+        if: steps.check_label.outputs.bump_type != 'none'
+        run: |
+          VERSION="${{ steps.bump_version.outputs.new_version }}"
+          git tag -a "v${VERSION}" -m "Release version ${VERSION}"
+          git push origin "v${VERSION}"
+          echo "Created and pushed tag v${VERSION}"
+
   build-images:
     needs: prepare-release
     if: needs.prepare-release.outputs.bump_type != 'none'
@@ -117,7 +125,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.ref_name }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -146,7 +154,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.ref_name }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
